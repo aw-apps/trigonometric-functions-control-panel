@@ -12,26 +12,32 @@
             background-color: #111;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #fff;
+            display: flex;
+            height: 100vh;
+            width: 100vw;
         }
         #canvas-container {
-            width: 100vw;
-            height: 100vh;
+            flex: 1;
+            height: 100%;
             display: block;
+            min-width: 0;
             touch-action: none; /* 防止在畫布上滑動時觸發網頁捲動 */
         }
         #ui-container {
-            position: absolute;
-            top: 20px;
-            left: 20px;
+            position: relative;
             background: rgba(0, 0, 0, 0.7);
             padding: 20px;
             border-radius: 15px;
             border: 1px solid #333;
-            max-width: 380px;
+            width: clamp(280px, 30vw, 380px);
+            margin: 20px;
             pointer-events: auto;
             backdrop-filter: blur(5px);
-            max-height: 90vh;
+            max-height: calc(100vh - 40px);
             overflow-y: auto;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            z-index: 5;
         }
         h1 {
             margin: 0 0 10px 0;
@@ -97,10 +103,19 @@
 
         /* 手機版螢幕優化 */
         @media (max-width: 768px) {
+            body {
+                display: block;
+            }
+            #canvas-container {
+                width: 100vw;
+                height: 100vh;
+            }
             #ui-container {
+                position: absolute;
                 top: auto;
                 bottom: 0;
                 left: 0;
+                margin: 0;
                 width: 100%;
                 max-width: 100%;
                 border-radius: 20px 20px 0 0;
@@ -170,12 +185,18 @@
         const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        function updateCamera() {
-            const aspect = window.innerWidth / window.innerHeight;
+        function getViewportSize() {
+            return {
+                width: Math.max(1, container.clientWidth),
+                height: Math.max(1, container.clientHeight)
+            };
+        }
+
+        function updateCamera(width, height) {
+            const aspect = width / height;
             const baseFrustumSize = 35;
             let currentFrustumSize = baseFrustumSize;
             
@@ -188,12 +209,19 @@
             camera.top = currentFrustumSize / 2;
             camera.bottom = currentFrustumSize / -2;
             
-            camera.position.set(2, -5, 10);
-            camera.lookAt(2, -5, 0);
+            // 讓桌機寬螢幕下圓形與投影區不會被上方裁切
+            camera.position.set(2, 0, 10);
+            camera.lookAt(2, 0, 0);
             camera.updateProjectionMatrix();
         }
-        
-        updateCamera();
+
+        function resizeScene() {
+            const { width, height } = getViewportSize();
+            renderer.setSize(width, height, false);
+            updateCamera(width, height);
+        }
+
+        resizeScene();
 
         // --- 2. 定義數學與物理參數 ---
         const R = 6; // 圓的半徑
@@ -317,8 +345,7 @@
         });
 
         window.addEventListener('resize', () => {
-            updateCamera();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            resizeScene();
         }, false);
 
         // 射線與游標設定
@@ -328,8 +355,9 @@
 
         // 計算游標在畫面上的座標 (-1 到 1)
         function updatePointer(event) {
-            pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-            pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            const rect = renderer.domElement.getBoundingClientRect();
+            pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         }
 
         // 偵測滑鼠按下 / 手指觸碰
