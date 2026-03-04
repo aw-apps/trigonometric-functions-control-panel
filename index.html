@@ -325,21 +325,22 @@
             <div class="control-group">
                 <button type="button" id="play-toggle" aria-pressed="true">播放中</button>
             </div>
+            <div class="control-group" id="value-display" aria-live="polite">
+                <span class="control-label">即時三角值</span>
+                <div class="math-text">
+                    <div>角度 θ = <span id="angle-val">0</span>°</div>
+                    <div>
+                        <span style="color:#ff3366">sin(θ)</span> = 對邊 / 斜邊 = <span id="sin-val" style="color:#ff3366">0.00</span>
+                    </div>
+                    <div>
+                        <span style="color:#33ccff">cos(θ)</span> = 鄰邊 / 斜邊 = <span id="cos-val" style="color:#33ccff">1.00</span>
+                    </div>
+                    <div>
+                        <span style="color:#33ff33">tan(θ)</span> = 對邊 / 鄰邊 = <span id="tan-val" style="color:#33ff33">0.00</span>
+                    </div>
+                </div>
+            </div>
         </section>
-
-        <!-- 與學校課本結合的動態公式顯示 -->
-        <div class="math-text">
-            <div>角度 θ = <span id="angle-val">0</span>°</div>
-            <div>
-                <span style="color:#ff3366">sin(θ)</span> = 對邊 / 斜邊 = <span id="sin-val" style="color:#ff3366">0.00</span>
-            </div>
-            <div>
-                <span style="color:#33ccff">cos(θ)</span> = 鄰邊 / 斜邊 = <span id="cos-val" style="color:#33ccff">1.00</span>
-            </div>
-            <div>
-                <span style="color:#33ff33">tan(θ)</span> = 對邊 / 鄰邊 = <span id="tan-val" style="color:#33ff33">0.00</span>
-            </div>
-        </div>
 
     </div>
 
@@ -586,6 +587,7 @@
             { value: 0.008, emoji: '🐢', label: '慢速' },
             { value: 0.03, emoji: '⚡', label: '快速' }
         ];
+        const TAN_UNDEFINED_THRESHOLD = 0.001;
         let speedModeIndex = 0;
 
         function syncAngleControls() {
@@ -602,6 +604,32 @@
             const normalizedDeg = ((Math.round(deg) % 360) + 360) % 360;
             panelState.theta = normalizedDeg * Math.PI / 180;
             syncAngleControls();
+            updateValueDisplayFromTheta();
+        }
+
+        function getTrigValues(theta) {
+            const fullTurn = Math.PI * 2;
+            const normalizedTheta = ((theta % fullTurn) + fullTurn) % fullTurn;
+            const sinValue = Math.sin(theta);
+            const cosValue = Math.cos(theta);
+            const rawTanValue = Math.tan(theta);
+            const isTanUndefined = Math.abs(cosValue) < TAN_UNDEFINED_THRESHOLD;
+            return {
+                normalizedTheta,
+                displayDeg: Math.floor(normalizedTheta * 180 / Math.PI),
+                sinValue,
+                cosValue,
+                tanValue: isTanUndefined ? (sinValue >= 0 ? 100 : -100) : rawTanValue,
+                tanDisplay: isTanUndefined ? 'undefined (∞)' : rawTanValue.toFixed(2)
+            };
+        }
+
+        function updateValueDisplayFromTheta() {
+            const { displayDeg, sinValue, cosValue, tanDisplay } = getTrigValues(panelState.theta);
+            angleValDisplay.innerText = displayDeg.toString().padStart(3, '0');
+            sinValDisplay.innerText = sinValue.toFixed(2);
+            cosValDisplay.innerText = cosValue.toFixed(2);
+            tanValDisplay.innerText = tanDisplay;
         }
 
         function applySpeedMode(index) {
@@ -646,6 +674,7 @@
         applySpeedMode(speedModeIndex);
         setPlayState(true);
         syncAngleControls();
+        updateValueDisplayFromTheta();
 
         window.addEventListener('resize', () => {
             resizeScene();
@@ -705,6 +734,7 @@
                 panelState.theta = Math.atan2(dy, dx);
                 if (panelState.theta < 0) panelState.theta += Math.PI * 2; // 保持角度在 0 ~ 360 度之間
                 syncAngleControls();
+                updateValueDisplayFromTheta();
             } else {
                 // 只是滑過星星時，改變游標樣式提示使用者可以點擊
                 const intersects = raycaster.intersectObject(hitMesh);
@@ -972,8 +1002,8 @@
             }
             
             // 計算 Sine 和 Cosine
-            const sinValue = Math.sin(panelState.theta);
-            const cosValue = Math.cos(panelState.theta);
+            const trigValues = getTrigValues(panelState.theta);
+            const { normalizedTheta, displayDeg, sinValue, cosValue, tanValue, tanDisplay } = trigValues;
             
             const currentX = circleCenter.x + R * cosValue;
             const currentY = circleCenter.y + R * sinValue;
@@ -1002,13 +1032,8 @@
             oppLine.geometry.attributes.position.needsUpdate = true;
 
             // --- 更新 Tangent 視覺化 ---
-            let rawTan = Math.tan(panelState.theta);
-            let displayTan = rawTan.toFixed(2);
-            
-            if (Math.abs(cosValue) < 0.001) {
-                displayTan = "∞";
-                rawTan = rawTan > 0 ? 100 : -100;
-            }
+            let rawTan = tanValue;
+            const displayTan = tanDisplay;
             
             const maxVisualTan = 2.5; 
             let visualTan = rawTan;
@@ -1074,9 +1099,6 @@
             cosProjLine.computeLineDistances();
 
             // 更新 UI 數字
-            const fullTurn = Math.PI * 2;
-            const normalizedTheta = ((panelState.theta % fullTurn) + fullTurn) % fullTurn;
-            const displayDeg = Math.floor(normalizedTheta * 180 / Math.PI);
             // 更新紫色弧長路徑
             const arcPositions = arcPathGeo.attributes.position.array;
             const arcPointCount = Math.max(2, Math.ceil((normalizedTheta / fullTurn) * arcSegments) + 1);
