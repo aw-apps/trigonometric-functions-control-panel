@@ -80,13 +80,61 @@
         .red-box { background-color: #ff3366; box-shadow: 0 0 8px #ff3366; }
         .blue-box { background-color: #33ccff; box-shadow: 0 0 8px #33ccff; }
         .green-box { background-color: #33ff33; box-shadow: 0 0 8px #33ff33; }
-        
-        #speed-control {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 12;
+        #control-panel {
+            margin: 14px 0;
+            padding: 12px;
+            border: 1px solid #3d3d3d;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
         }
+        .panel-title {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            color: #ffcc00;
+        }
+        .control-group {
+            margin-bottom: 10px;
+        }
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+        .control-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        #angle-slider,
+        #angle-input,
+        #play-toggle,
+        .speed-option {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #angle-input,
+        #play-toggle,
+        .speed-option {
+            border: 1px solid #4a4a4a;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            padding: 8px 10px;
+            font-size: 14px;
+        }
+        .speed-options {
+            display: grid;
+            grid-template-columns: 48px 1fr 1fr;
+            gap: 8px;
+            align-items: center;
+        }
+        .speed-option.active {
+            border-color: #ffcc00;
+            box-shadow: 0 0 10px rgba(255, 204, 0, 0.2);
+        }
+        #play-toggle[aria-pressed="false"] {
+            border-color: #888;
+            color: #ddd;
+        }
+        
         .speed-btn {
             width: 48px;
             height: 48px;
@@ -213,9 +261,15 @@
             p { font-size: 13px; margin: 5px 0 10px 0; }
             .legend { font-size: 14px; margin-bottom: 2px; }
             .math-text { font-size: 13px; padding: 8px; }
-            #speed-control {
-                top: calc(10px + env(safe-area-inset-top));
-                right: calc(10px + env(safe-area-inset-right));
+            #control-panel {
+                margin: 10px 0;
+                padding: 10px;
+            }
+            .panel-title {
+                font-size: 15px;
+            }
+            .speed-options {
+                grid-template-columns: 44px 1fr 1fr;
             }
             .speed-btn {
                 width: 44px;
