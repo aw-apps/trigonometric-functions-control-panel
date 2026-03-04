@@ -1108,6 +1108,7 @@
             // 更新 UI 數字
             // 更新紫色弧長路徑
             const arcPositions = arcPathGeo.attributes.position.array;
+            const fullTurn = Math.PI * 2;
             const arcPointCount = Math.max(2, Math.ceil((normalizedTheta / fullTurn) * arcSegments) + 1);
             for (let i = 0; i < arcPointCount; i++) {
                 const t = i / (arcPointCount - 1);
