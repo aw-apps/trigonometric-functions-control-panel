@@ -325,21 +325,22 @@
             <div class="control-group">
                 <button type="button" id="play-toggle" aria-pressed="true">播放中</button>
             </div>
+            <div class="control-group" id="value-display" aria-live="polite">
+                <span class="control-label">即時三角值</span>
+                <div class="math-text">
+                    <div>角度 θ = <span id="angle-val">0</span>°</div>
+                    <div>
+                        <span style="color:#ff3366">sin(θ)</span> = 對邊 / 斜邊 = <span id="sin-val" style="color:#ff3366">0.00</span>
+                    </div>
+                    <div>
+                        <span style="color:#33ccff">cos(θ)</span> = 鄰邊 / 斜邊 = <span id="cos-val" style="color:#33ccff">1.00</span>
+                    </div>
+                    <div>
+                        <span style="color:#33ff33">tan(θ)</span> = 對邊 / 鄰邊 = <span id="tan-val" style="color:#33ff33">0.00</span>
+                    </div>
+                </div>
+            </div>
         </section>
-
-        <!-- 與學校課本結合的動態公式顯示 -->
-        <div class="math-text">
-            <div>角度 θ = <span id="angle-val">0</span>°</div>
-            <div>
-                <span style="color:#ff3366">sin(θ)</span> = 對邊 / 斜邊 = <span id="sin-val" style="color:#ff3366">0.00</span>
-            </div>
-            <div>
-                <span style="color:#33ccff">cos(θ)</span> = 鄰邊 / 斜邊 = <span id="cos-val" style="color:#33ccff">1.00</span>
-            </div>
-            <div>
-                <span style="color:#33ff33">tan(θ)</span> = 對邊 / 鄰邊 = <span id="tan-val" style="color:#33ff33">0.00</span>
-            </div>
-        </div>
 
     </div>
 
