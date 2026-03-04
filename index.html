@@ -384,8 +384,12 @@
 
         // --- 2. 定義數學與物理參數 ---
         const R = 10.00; // 圓的半徑
-        let theta = 0; // 當前角度
-        let speed = 0.008; 
+        const panelState = {
+            theta: 0,
+            speed: 0.008,
+            isPlaying: true,
+            isDragging: false
+        };
         
         const circleCenter = new THREE.Vector3(-8, 8, 0);
         const wavePointsCount = 400;
@@ -508,6 +512,10 @@
         // --- 4. 互動與 UI 控制 (新增滑鼠/觸控拖曳) ---
         const speedToggle = document.getElementById('speed-toggle');
         const speedToggleEmoji = speedToggle.querySelector('.speed-btn-emoji');
+        const angleSlider = document.getElementById('angle-slider');
+        const angleInput = document.getElementById('angle-input');
+        const playToggle = document.getElementById('play-toggle');
+        const speedOptionButtons = Array.from(document.querySelectorAll('.speed-option'));
         const angleValDisplay = document.getElementById('angle-val');
         const sinValDisplay = document.getElementById('sin-val');
         const cosValDisplay = document.getElementById('cos-val');
@@ -521,25 +529,69 @@
         const projectedVec = new THREE.Vector3();
 
         const speedModes = [
-            { value: 0, emoji: '⏸️', label: '暫停' },
             { value: 0.008, emoji: '🐢', label: '慢速' },
             { value: 0.03, emoji: '⚡', label: '快速' }
         ];
-        let speedModeIndex = 1;
+        let speedModeIndex = 0;
+
+        function syncAngleControls() {
+            const deg = Math.floor((((panelState.theta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) * 180 / Math.PI);
+            angleSlider.value = String(deg);
+            angleInput.value = String(deg);
+        }
+
+        function setThetaFromDegrees(degValue) {
+            const deg = Number(degValue);
+            if (!Number.isFinite(deg)) {
+                return;
+            }
+            const normalizedDeg = ((Math.round(deg) % 360) + 360) % 360;
+            panelState.theta = normalizedDeg * Math.PI / 180;
+            syncAngleControls();
+        }
 
         function applySpeedMode(index) {
-            const mode = speedModes[index];
-            speed = mode.value;
             speedModeIndex = index;
+            const mode = speedModes[index];
+            panelState.speed = mode.value;
             speedToggleEmoji.textContent = mode.emoji;
             speedToggle.title = `速度：${mode.label}`;
             speedToggle.setAttribute('aria-label', `切換速度（目前${mode.label}）`);
+            speedOptionButtons.forEach((button, buttonIndex) => {
+                button.classList.toggle('active', buttonIndex === index);
+            });
         }
+
+        function setPlayState(isPlaying) {
+            panelState.isPlaying = isPlaying;
+            playToggle.textContent = isPlaying ? '播放中' : '已暫停';
+            playToggle.setAttribute('aria-pressed', isPlaying ? 'true' : 'false');
+        }
+
+        angleSlider.addEventListener('input', (event) => {
+            setThetaFromDegrees(event.target.value);
+        });
+
+        angleInput.addEventListener('input', (event) => {
+            setThetaFromDegrees(event.target.value);
+        });
+
+        speedOptionButtons.forEach((button, index) => {
+            button.addEventListener('click', () => {
+                applySpeedMode(index);
+            });
+        });
+
+        playToggle.addEventListener('click', () => {
+            setPlayState(!panelState.isPlaying);
+        });
 
         speedToggle.addEventListener('click', () => {
             applySpeedMode((speedModeIndex + 1) % speedModes.length);
         });
         applySpeedMode(speedModeIndex);
+        setPlayState(true);
+        syncAngleControls();
 
         window.addEventListener('resize', () => {
             resizeScene();
@@ -560,7 +612,6 @@
         // 射線與游標設定
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
-        let isDragging = false;
 
         // 計算游標在畫面上的座標 (-1 到 1)
         function updatePointer(event) {
@@ -577,7 +628,7 @@
             // 檢查是否點擊到星星的感應區
             const intersects = raycaster.intersectObject(hitMesh);
             if (intersects.length > 0) {
-                isDragging = true;
+                panelState.isDragging = true;
                 container.style.cursor = 'grabbing';
             }
         });
@@ -587,7 +638,7 @@
             updatePointer(event);
             raycaster.setFromCamera(pointer, camera);
 
-            if (isDragging) {
+            if (panelState.isDragging) {
                 // 如果正在拖曳，計算游標與圓心的數學角度
                 const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
                 const target = new THREE.Vector3();
@@ -597,8 +648,9 @@
                 const dy = target.y - circleCenter.y;
                 
                 // 使用反正切函數計算角度
-                theta = Math.atan2(dy, dx);
-                if (theta < 0) theta += Math.PI * 2; // 保持角度在 0 ~ 360 度之間
+                panelState.theta = Math.atan2(dy, dx);
+                if (panelState.theta < 0) panelState.theta += Math.PI * 2; // 保持角度在 0 ~ 360 度之間
+                syncAngleControls();
             } else {
                 // 只是滑過星星時，改變游標樣式提示使用者可以點擊
                 const intersects = raycaster.intersectObject(hitMesh);
@@ -612,7 +664,7 @@
 
         // 偵測滑鼠放開 / 手指離開
         window.addEventListener('pointerup', () => {
-            isDragging = false;
+            panelState.isDragging = false;
             container.style.cursor = 'default';
         });
 
@@ -861,13 +913,13 @@
             requestAnimationFrame(animate);
 
             // 當沒有在拖曳星星時，才讓它自動旋轉
-            if (!isDragging) {
-                theta += speed;
+            if (!panelState.isDragging && panelState.isPlaying) {
+                panelState.theta += panelState.speed;
             }
             
             // 計算 Sine 和 Cosine
-            const sinValue = Math.sin(theta);
-            const cosValue = Math.cos(theta);
+            const sinValue = Math.sin(panelState.theta);
+            const cosValue = Math.cos(panelState.theta);
             
             const currentX = circleCenter.x + R * cosValue;
             const currentY = circleCenter.y + R * sinValue;
@@ -896,7 +948,7 @@
             oppLine.geometry.attributes.position.needsUpdate = true;
 
             // --- 更新 Tangent 視覺化 ---
-            let rawTan = Math.tan(theta);
+            let rawTan = Math.tan(panelState.theta);
             let displayTan = rawTan.toFixed(2);
             
             if (Math.abs(cosValue) < 0.001) {
@@ -932,7 +984,7 @@
             const sinPositions = sinWaveLine.geometry.attributes.position.array;
             const sinStartX = circleCenter.x + R + 5; 
             for (let i = 0; i < wavePointsCount; i++) {
-                const histTheta = theta - (i * waveSpacing); 
+                const histTheta = panelState.theta - (i * waveSpacing); 
                 sinPositions[i * 3] = sinStartX + (i * waveSpacing * 2); 
                 sinPositions[i * 3 + 1] = circleCenter.y + R * Math.sin(histTheta); 
                 sinPositions[i * 3 + 2] = 0;
@@ -943,7 +995,7 @@
             const cosPositions = cosWaveLine.geometry.attributes.position.array;
             const cosStartY = circleCenter.y - R - 3; 
             for (let i = 0; i < wavePointsCount; i++) {
-                const histTheta = theta - (i * waveSpacing);
+                const histTheta = panelState.theta - (i * waveSpacing);
                 cosPositions[i * 3] = circleCenter.x + R * Math.cos(histTheta); 
                 cosPositions[i * 3 + 1] = cosStartY - (i * waveSpacing * 2); 
                 cosPositions[i * 3 + 2] = 0;
@@ -969,7 +1021,7 @@
 
             // 更新 UI 數字
             const fullTurn = Math.PI * 2;
-            const normalizedTheta = ((theta % fullTurn) + fullTurn) % fullTurn;
+            const normalizedTheta = ((panelState.theta % fullTurn) + fullTurn) % fullTurn;
             const displayDeg = Math.floor(normalizedTheta * 180 / Math.PI);
             // 更新紫色弧長路徑
             const arcPositions = arcPathGeo.attributes.position.array;
@@ -988,6 +1040,7 @@
             sinValDisplay.innerText = sinValue.toFixed(2);
             cosValDisplay.innerText = cosValue.toFixed(2);
             tanValDisplay.innerText = displayTan; 
+            syncAngleControls();
             updateHudTags({
                 normalizedTheta,
                 displayDeg,
