@@ -253,6 +253,26 @@
             <span>Tangent (正切) = 坡度/斜率</span>
         </div>
 
+        <section id="control-panel" aria-label="互動控制面板">
+            <h2 class="panel-title">互動控制</h2>
+            <div class="control-group">
+                <label for="angle-slider">角度 θ（度）</label>
+                <input id="angle-slider" type="range" min="0" max="359" step="1" value="0">
+                <input id="angle-input" type="number" min="0" max="359" step="1" value="0" inputmode="numeric" aria-label="角度輸入">
+            </div>
+            <div class="control-group">
+                <span class="control-label">播放速度</span>
+                <div class="speed-options" role="group" aria-label="速度控制">
+                    <button type="button" id="speed-toggle" class="speed-btn active" aria-label="切換速度" title="速度：慢速"><span class="speed-btn-emoji">🐢</span></button>
+                    <button type="button" class="speed-option active" data-speed="0.008">慢速</button>
+                    <button type="button" class="speed-option" data-speed="0.03">快速</button>
+                </div>
+            </div>
+            <div class="control-group">
+                <button type="button" id="play-toggle" aria-pressed="true">播放中</button>
+            </div>
+        </section>
+
         <!-- 與學校課本結合的動態公式顯示 -->
         <div class="math-text">
             <div>角度 θ = <span id="angle-val">0</span>°</div>
@@ -278,9 +298,6 @@
         <div id="hud-tan" class="data-tag tan"></div>
         <div id="hud-arc" class="data-tag arc"></div>
     </div>
-        <div id="speed-control">
-            <button type="button" id="speed-toggle" class="speed-btn active" aria-label="切換速度" title="速度：慢速"><span class="speed-btn-emoji">🐢</span></button>
-        </div>
 
     <script>
         // --- 1. 基本場景設定 ---
