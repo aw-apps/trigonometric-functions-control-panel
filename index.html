@@ -587,6 +587,7 @@
             { value: 0.008, emoji: '🐢', label: '慢速' },
             { value: 0.03, emoji: '⚡', label: '快速' }
         ];
+        const TAN_UNDEFINED_THRESHOLD = 0.001;
         let speedModeIndex = 0;
 
         function syncAngleControls() {
@@ -609,21 +610,26 @@
         function getTrigValues(theta) {
             const fullTurn = Math.PI * 2;
             const normalizedTheta = ((theta % fullTurn) + fullTurn) % fullTurn;
+            const sinValue = Math.sin(theta);
+            const cosValue = Math.cos(theta);
+            const rawTanValue = Math.tan(theta);
+            const isTanUndefined = Math.abs(cosValue) < TAN_UNDEFINED_THRESHOLD;
             return {
                 normalizedTheta,
                 displayDeg: Math.floor(normalizedTheta * 180 / Math.PI),
-                sinValue: Math.sin(theta),
-                cosValue: Math.cos(theta),
-                tanValue: Math.tan(theta)
+                sinValue,
+                cosValue,
+                tanValue: isTanUndefined ? (sinValue >= 0 ? 100 : -100) : rawTanValue,
+                tanDisplay: isTanUndefined ? 'undefined (∞)' : rawTanValue.toFixed(2)
             };
         }
 
         function updateValueDisplayFromTheta() {
-            const { displayDeg, sinValue, cosValue, tanValue } = getTrigValues(panelState.theta);
+            const { displayDeg, sinValue, cosValue, tanDisplay } = getTrigValues(panelState.theta);
             angleValDisplay.innerText = displayDeg.toString().padStart(3, '0');
             sinValDisplay.innerText = sinValue.toFixed(2);
             cosValDisplay.innerText = cosValue.toFixed(2);
-            tanValDisplay.innerText = tanValue.toFixed(2);
+            tanValDisplay.innerText = tanDisplay;
         }
 
         function applySpeedMode(index) {
@@ -997,7 +1003,7 @@
             
             // 計算 Sine 和 Cosine
             const trigValues = getTrigValues(panelState.theta);
-            const { normalizedTheta, displayDeg, sinValue, cosValue, tanValue } = trigValues;
+            const { normalizedTheta, displayDeg, sinValue, cosValue, tanValue, tanDisplay } = trigValues;
             
             const currentX = circleCenter.x + R * cosValue;
             const currentY = circleCenter.y + R * sinValue;
@@ -1027,12 +1033,7 @@
 
             // --- 更新 Tangent 視覺化 ---
             let rawTan = tanValue;
-            let displayTan = rawTan.toFixed(2);
-            
-            if (Math.abs(cosValue) < 0.001) {
-                displayTan = "∞";
-                rawTan = rawTan > 0 ? 100 : -100;
-            }
+            const displayTan = tanDisplay;
             
             const maxVisualTan = 2.5; 
             let visualTan = rawTan;
