@@ -590,8 +590,17 @@
         const TAN_UNDEFINED_THRESHOLD = 0.001;
         let speedModeIndex = 0;
 
+        function normalizeTheta(theta) {
+            const fullTurn = Math.PI * 2;
+            return ((theta % fullTurn) + fullTurn) % fullTurn;
+        }
+
+        function setTheta(theta) {
+            panelState.theta = normalizeTheta(theta);
+        }
+
         function syncAngleControls() {
-            const deg = Math.floor((((panelState.theta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) * 180 / Math.PI);
+            const deg = Math.floor(normalizeTheta(panelState.theta) * 180 / Math.PI);
             angleSlider.value = String(deg);
             angleInput.value = String(deg);
         }
@@ -602,17 +611,16 @@
                 return;
             }
             const normalizedDeg = ((Math.round(deg) % 360) + 360) % 360;
-            panelState.theta = normalizedDeg * Math.PI / 180;
+            setTheta(normalizedDeg * Math.PI / 180);
             syncAngleControls();
             updateValueDisplayFromTheta();
         }
 
         function getTrigValues(theta) {
-            const fullTurn = Math.PI * 2;
-            const normalizedTheta = ((theta % fullTurn) + fullTurn) % fullTurn;
-            const sinValue = Math.sin(theta);
-            const cosValue = Math.cos(theta);
-            const rawTanValue = Math.tan(theta);
+            const normalizedTheta = normalizeTheta(theta);
+            const sinValue = Math.sin(normalizedTheta);
+            const cosValue = Math.cos(normalizedTheta);
+            const rawTanValue = Math.tan(normalizedTheta);
             const isTanUndefined = Math.abs(cosValue) < TAN_UNDEFINED_THRESHOLD;
             return {
                 normalizedTheta,
@@ -731,8 +739,7 @@
                 const dy = target.y - circleCenter.y;
                 
                 // 使用反正切函數計算角度
-                panelState.theta = Math.atan2(dy, dx);
-                if (panelState.theta < 0) panelState.theta += Math.PI * 2; // 保持角度在 0 ~ 360 度之間
+                setTheta(Math.atan2(dy, dx));
                 syncAngleControls();
                 updateValueDisplayFromTheta();
             } else {
@@ -998,7 +1005,7 @@
 
             // 當沒有在拖曳星星時，才讓它自動旋轉
             if (!panelState.isDragging && panelState.isPlaying) {
-                panelState.theta += panelState.speed;
+                setTheta(panelState.theta + panelState.speed);
             }
             
             // 計算 Sine 和 Cosine
@@ -1101,6 +1108,7 @@
             // 更新 UI 數字
             // 更新紫色弧長路徑
             const arcPositions = arcPathGeo.attributes.position.array;
+            const fullTurn = Math.PI * 2;
             const arcPointCount = Math.max(2, Math.ceil((normalizedTheta / fullTurn) * arcSegments) + 1);
             for (let i = 0; i < arcPointCount; i++) {
                 const t = i / (arcPointCount - 1);
